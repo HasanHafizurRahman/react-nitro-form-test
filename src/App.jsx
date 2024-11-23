@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm, required, minLength } from 'react-nitro-form';
+import { useForm, required, minLength, isEmail } from 'react-nitro-form';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -7,24 +7,40 @@ const App = () => {
   const initialValues = { name: '', email: '', password: '' };
   const [submittedData, setSubmittedData] = useState(null);
 
-  const handleFormSubmit = (values) => {
-    setSubmittedData(values);
-    toast.success('Form submitted successfully!');
-  };
-
   const validate = {
     name: required,
-    email: required,
+    email: isEmail,
     password: minLength(6),
   };
 
-  const { values, handleChange, handleSubmit } = useForm(initialValues, handleFormSubmit);
+  const { values, handleChange, handleSubmit, handleReset } = useForm(
+    initialValues,
+    (values) => {
+      const errors = Object.keys(validate).reduce((acc, field) => {
+        const error = validate[field](values[field]);
+        if (error) acc[field] = error;
+        return acc;
+      }, {});
+
+      if (Object.keys(errors).length > 0) {
+        toast.error('Please fix the validation errors before submitting.');
+        return;
+      }
+
+      setSubmittedData(values);
+      toast.success('Form submitted successfully!');
+    },
+    () => {
+      setSubmittedData(null);
+      toast.info('Form reset!');
+    }
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-6">
       <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-700">React Nitro Form Demo</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} onReset={handleReset} className="space-y-6">
           <div className="space-y-1">
             <label className="block text-gray-700 font-semibold">Name</label>
             <input
@@ -64,12 +80,20 @@ const App = () => {
             {validate.password(values.password) && <p className="text-red-500 text-sm">{validate.password(values.password)}</p>}
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-200"
-          >
-            Submit
-          </button>
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-200"
+            >
+              Submit
+            </button>
+            <button
+              type="reset"
+              className="w-full bg-gray-300 text-black py-2 rounded-md hover:bg-gray-400 transition duration-200"
+            >
+              Reset
+            </button>
+          </div>
         </form>
         <ToastContainer />
 
